@@ -12,6 +12,7 @@
 precision highp float;
 
 uniform vec4 u_Color; // The color with which to render this instance of geometry.
+uniform float u_HEAT;
 
 // These are the interpolated values out of the rasterizer, so you can't know
 // their specific values without knowing the vertices that contributed to them
@@ -19,25 +20,84 @@ in vec4 fs_Nor;
 in vec4 fs_LightVec;
 in vec4 fs_Col;
 
+in vec4 fs_Pos;
+
+in float fs_Noise;
+
 out vec4 out_Col; // This is the final output color that you will see on your
                   // screen for the pixel that is currently being processed.
+
+// credit: https://iquilezles.org/articles/functions/
+float almostIdentity( float x, float m, float e )
+{
+    if( x>m ) return x;
+    float a = 2.0*e - m;
+    float b = 2.0*m - 3.0*e;
+    float t = x/m;
+    return (a*t+b)*t*t + e;
+}
+
+
+float cosColor_Pos(float offset, float amp, float freq, float phase) {
+    vec3 target = vec3(0.0, 2.0, 0.0);
+    float d = length(fs_Pos.xyz - target);
+    float innerRadius = 1.;
+    float outerRadius = 3.;
+    float weight = smoothstep(innerRadius, outerRadius, d * mix(1.0, 2.0, u_HEAT));
+    return clamp(
+    offset + amp * cos(6.28318530718 * (weight * freq + phase)),
+    0.0, 1.0
+    );
+}
+
+
+float cosColor_Noise(float offset, float amp, float freq, float phase)
+{
+    // Map noise into the palette's 0–1 input range.
+    float weight = clamp(fs_Noise * 1.5, 0.0, 1.0);
+
+    return clamp(
+        offset + amp * cos(6.28318530718 * (weight * freq + phase)),
+        0.0, 1.0
+    );
+}
 
 void main()
 {
     // Material base color (before shading)
-        vec4 diffuseColor = u_Color;
 
-        // Calculate the diffuse term for Lambert shading
-        float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));
-        // Avoid negative lighting values
-        // diffuseTerm = clamp(diffuseTerm, 0, 1);
+    float red_Pos = cosColor_Pos(0.418, 0.8984, 0.5306, 2.8284);
+    float green_Pos = cosColor_Pos(0.55, 0.85, 0.5135, 4.1968);
+    float blue_Pos = cosColor_Pos(0.4184, 0.7184, -0.4714, 1.5034);
 
-        float ambientTerm = 0.2;
+    vec3 pC = vec3(red_Pos, green_Pos, blue_Pos);
 
-        float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier
-                                                            //to simulate ambient lighting. This ensures that faces that are not
-                                                            //lit by our point light are not completely black.
+    float red_Noise = cosColor_Noise(0.418, 0.8984, 0.5306, 2.8284);
+    float green_Noise = cosColor_Noise(0.55, 0.85, 0.5135, 4.1968);
+    float blue_Noise = cosColor_Noise(0.4184, 0.7184, -0.4714, 1.5034);
 
-        // Compute final shaded color
-        out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
+    vec3 nC = vec3(red_Noise, green_Noise, blue_Noise);
+
+    float topMask = smoothstep(1.0, 3.0, fs_Pos.y);
+
+    pC = mix(pC, nC, topMask);
+    
+    
+
+    vec4 diffuseColor = vec4(pC.x, pC.y, pC.z, 1.);
+
+    // Calculate the diffuse term for Lambert shading
+    float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));
+    // Avoid negative lighting values
+    diffuseTerm = clamp(diffuseTerm, 0.0, 1.);
+    // smooth ambient minimum
+    diffuseTerm = almostIdentity(diffuseTerm, 0.3, 0.225);
+
+    float ambientTerm = 0.0;
+
+    float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier
+                                                        //to simulate ambient lighting. This ensures that faces that are not
+                                                        //lit by our point light are not completely black.
+    // Compute final shaded color
+    out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
 }

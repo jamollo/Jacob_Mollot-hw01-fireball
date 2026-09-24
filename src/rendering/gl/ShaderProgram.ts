@@ -29,6 +29,13 @@ class ShaderProgram {
   unifModelInvTr: WebGLUniformLocation;
   unifViewProj: WebGLUniformLocation;
   unifColor: WebGLUniformLocation;
+  unifTime: WebGLUniformLocation;
+  
+  // custom
+  unifGROW: WebGLUniformLocation;
+  unifRELAX: WebGLUniformLocation;
+  unifHEAT: WebGLUniformLocation;
+
 
   constructor(shaders: Array<Shader>) {
     this.prog = gl.createProgram();
@@ -48,6 +55,15 @@ class ShaderProgram {
     this.unifModelInvTr = gl.getUniformLocation(this.prog, "u_ModelInvTr");
     this.unifViewProj   = gl.getUniformLocation(this.prog, "u_ViewProj");
     this.unifColor      = gl.getUniformLocation(this.prog, "u_Color");
+    this.unifTime = gl.getUniformLocation(this.prog, "u_time");
+
+    //custom
+    this.unifGROW = gl.getUniformLocation(this.prog, "u_GROW");
+    this.unifRELAX = gl.getUniformLocation(this.prog, "u_RELAX");
+    this.unifHEAT = gl.getUniformLocation(this.prog, "u_HEAT");
+
+    
+    
   }
 
   use() {
@@ -75,6 +91,34 @@ class ShaderProgram {
     this.use();
     if (this.unifViewProj !== -1) {
       gl.uniformMatrix4fv(this.unifViewProj, false, vp);
+    }
+  }
+
+  setTime(time: number) {
+    this.use();
+    if (this.unifTime !== -1) {
+      gl.uniform1f(this.unifTime, time);
+    }
+  }
+
+  // custom
+  setGROW (GROW: number) {
+    this.use();
+    if (this.unifGROW !== -1) {
+      gl.uniform1f(this.unifGROW, GROW);
+    }
+  }
+  setRELAX (RELAX: number) {
+    this.use();
+    if (this.unifRELAX !== -1) {
+      gl.uniform1f(this.unifRELAX, RELAX);
+    }
+  }
+
+  setHEAT (HEAT: number) {
+    this.use();
+    if (this.unifHEAT !== -1) {
+      gl.uniform1f(this.unifHEAT, HEAT);
     }
   }
 
