@@ -31,5 +31,7 @@ I started with the provided icosphere and deformed its vertices in the vertex sh
     <img src="heat.png" width="300">
   </p>
 
+* **Note:** I am using my two lates days for this assignment (talked to the professors about this).
+
 ### Live Link:
 https://jamollo.github.io/Jacob_Mollot-hw01-fireball/
